@@ -1,0 +1,14 @@
+// Intended for use at http://www.quantumplayground.net
+// Entanglement example.
+// After using the H and CNOT gates, the resulting state
+// is a 50% probability of 0 and 0, and 50% of 1 and 1.
+// No matter which qubit is observed first, the other qubit
+// will return the same measurement.
+VectorSize 8
+
+Hadamard 0
+CNot 0, 1
+
+SetViewMode 2
+Delay 10
+SetViewAngle Math.PI / 12

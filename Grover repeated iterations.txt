@@ -1,0 +1,48 @@
+// Intended for use at http://www.quantumplayground.net
+// Grover with repeated oracle/diffusion
+VectorSize 8
+
+// Place all qubits in superposition
+Hadamard 0
+Hadamard 1
+Hadamard 2
+
+// Optimal number of iterations is pi/4 * sqrt(N)
+// Here, N is 8, so optimal number is 2.22 (round to 2)
+number_of_iterations = 2
+
+for i = 0; i < number_of_iterations; i += 1
+  Print "Iteration: " + (i + 1)
+  // Oracle: select value 110 (6)
+  SigmaX 0
+  Hadamard 2
+  Toffoli 0, 1, 2
+  SigmaX 0
+  Hadamard 2
+
+  // Diffusion
+  Hadamard 0
+  Hadamard 1
+  Hadamard 2
+  SigmaX 0
+  SigmaX 1
+  SigmaX 2
+  Hadamard 2
+  Toffoli 0, 1, 2
+  Hadamard 2
+  SigmaX 0
+  SigmaX 1
+  SigmaX 2
+  Hadamard 0
+  Hadamard 1
+  Hadamard 2
+endfor
+
+Measure
+result = measured_value
+Print "result is " + result
+
+// Render the output
+SetViewMode 2
+Delay 10
+SetViewAngle Math.PI / 12
