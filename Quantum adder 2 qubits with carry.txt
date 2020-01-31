@@ -1,0 +1,72 @@
+// Intended for use at http://www.quantumplayground.net
+// Quantum adder
+// Add two 2-bit numbers, and return a 3-bit result
+// Qubit 0 is addend 1 bit 1 (high order)
+// Qubit 1 is addend 1 bit 2 (low order)
+// Qubit 2 is addend 2 bit 1 (high order)
+// Qubit 3 is addend 2 bit 2 (low order)
+// Qubit 4 is result bit 1 (high order)
+// Qubit 5 is result bit 2
+// Qubit 6 is result bit 3 (low order)
+// Qubit 7 is ancilla
+ 
+// Expected results for all inputs (mod 128)
+// First four qubits (0 - 3) should match the original input.
+// Qubits 4 - 6 should be the output sum, high-order bit first.
+// Qubit 7 (not shown in expected results) is ancilla and does not
+// matter.  Ideally, it should be zero, so it can be reused if needed later.
+// [0, 0, 0, 0] ==> [0, 0, 0, 0,  0, 0, 0] = |0>
+// [0, 0, 0, 1] ==> [0, 0, 0, 1,  0, 0, 1] = |72>
+// [0, 0, 1, 0] ==> [0, 0, 1, 0,  0, 1, 0] = |36>
+// [0, 0, 1, 1] ==> [0, 0, 1, 1,  0, 1, 1] = |108>
+// [0, 1, 0, 0] ==> [0, 1, 0, 0,  0, 0, 1] = |66>
+// [0, 1, 0, 1] ==> [0, 1, 0, 1,  0, 1, 0] = |42>
+// [0, 1, 1, 0] ==> [0, 1, 1, 0,  0, 1, 1] = |102>
+// [0, 1, 1, 1] ==> [0, 1, 1, 1,  1, 0, 0] = |30>
+// [1, 0, 0, 0] ==> [1, 0, 0, 0,  0, 1, 0] = |33>
+// [1, 0, 0, 1] ==> [1, 0, 0, 1,  0, 1, 1] = |105>
+// [1, 0, 1, 0] ==> [1, 0, 1, 0,  1, 0, 0] = |21>
+// [1, 0, 1, 1] ==> [1, 0, 1, 1,  1, 0, 1] = |93>
+// [1, 1, 0, 0] ==> [1, 1, 0, 0,  0, 1, 1] = |99>
+// [1, 1, 0, 1] ==> [1, 1, 0, 1,  1, 0, 0] = |27>
+// [1, 1, 1, 0] ==> [1, 1, 1, 0,  1, 0, 1] = |87>
+// [1, 1, 1, 1] ==> [1, 1, 1, 1,  1, 1, 0] = |63>
+ 
+VectorSize 8
+ 
+// Assign inputs - uncomment some or all of the following lines to test
+// Inputs default to |0>, and are flipped to |1> by SigmaX
+//SigmaX 0
+//SigmaX 1
+//SigmaX 2
+//SigmaX 3
+ 
+// First addition: Add low order bits (1 and 3) into bit 6
+// use bit 7 as the carry bit
+ 
+// Carry bit
+Toffoli 1, 3, 7
+ 
+// Sum bit
+CNot 1, 6
+CNot 3, 6
+ 
+// Second addition: Add high order bits (0, 2) and carry (7) into bit 5
+// Use bit 4 as the new carry bit
+// Carry bit
+Toffoli 0, 2, 4
+CNot 0, 2
+Toffoli 7, 2, 4
+CNot 0, 2
+ 
+// Sum bit
+CNot 0, 5
+CNot 2, 5
+CNot 7, 5
+
+// Remove all values from qubit 7 by re-running this Toffoli gate
+Toffoli 1, 3, 7
+ 
+SetViewMode 2
+Delay 10
+SetViewAngle Math.PI / 12
