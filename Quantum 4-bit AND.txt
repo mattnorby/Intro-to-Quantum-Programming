@@ -1,0 +1,44 @@
+// Intended for use at http://www.quantumplayground.net
+// Compute the logical "and" of 4 bits.
+// Inputs: qubits 0 - 3
+// Output: qubit 4 (true if all 4 input bits are 1)
+// Ancilla: qubits 5 - 6
+ 
+// Expected results:
+// [0, 0, 0, 0] ==> [0, 0, 0, 0,  0] = |0>
+// [0, 0, 0, 1] ==> [0, 0, 0, 1,  0] = |8>
+// [0, 0, 1, 0] ==> [0, 0, 1, 0,  0] = |4>
+// [0, 0, 1, 1] ==> [0, 0, 1, 1,  0] = |12>
+// [0, 1, 0, 0] ==> [0, 1, 0, 0,  0] = |2>
+// [0, 1, 0, 1] ==> [0, 1, 0, 1,  0] = |10>
+// [0, 1, 1, 0] ==> [0, 1, 1, 0,  0] = |6>
+// [0, 1, 1, 1] ==> [0, 1, 1, 1,  0] = |14>
+// [1, 0, 0, 0] ==> [1, 0, 0, 0,  0] = |1>
+// [1, 0, 0, 1] ==> [1, 0, 0, 1,  0] = |9>
+// [1, 0, 1, 0] ==> [1, 0, 1, 0,  0] = |5>
+// [1, 0, 1, 1] ==> [1, 0, 1, 1,  0] = |13>
+// [1, 1, 0, 0] ==> [1, 1, 0, 0,  0] = |3>
+// [1, 1, 0, 1] ==> [1, 1, 0, 1,  0] = |11>
+// [1, 1, 1, 0] ==> [1, 1, 1, 0,  0] = |7>
+// [1, 1, 1, 1] ==> [1, 1, 1, 1,  1] = |31>
+ 
+VectorSize 8
+ 
+// Initialize qubits to input values (uncomment to flip bits from 0 to 1)
+//SigmaX 0
+//SigmaX 1
+//SigmaX 2
+//SigmaX 3
+ 
+// Compute the "and"
+Toffoli 0, 1, 5
+Toffoli 2, 5, 6
+Toffoli 3, 6, 4
+ 
+// Uncompute the ancilla
+Toffoli 2, 5, 6
+Toffoli 0, 1, 5
+ 
+SetViewMode 2
+Delay 10
+SetViewAngle Math.PI / 12
