@@ -1,0 +1,113 @@
+// Compute mod 7 of a 6-bit integer, using 3 ancilla.
+// Uses the fact that n x 8 = (n x 7) + n ==> (n x 8) mod 7 = n mod 7
+// e.g. 1011000 = 88 = 4 mod 7, but 88 = 11 x 8 and 11 = 1011 is also 4 mod 7
+// By extension, (n x 8) mod 7 = (n x 8 x 8) mod 7 = (n x 8 x 8 x 8) mod 7, etc.
+// Therefore, we can group the bits in threes and add them to get an equivalent mod 7 value.
+// e.g. for 45 = 101101, we can simply add 101 + 101 = 1010, and then effectively subtract 7
+// by subtracting 8 = 1000 and adding 1, yielding 011 = 3, the correct answer.
+// To save a step and some ancilla qubits, we first compute the high-order bit of the 4-bit sum,
+// representing 8 = 1000.  Then we use it as a third addend, and calculate only one sum.
+// e.g. for 45 = 101101, we see that the result of 101 + 101 will be larger than 1000 = 8.
+// So we add 101 + 101 + 1, and ignore the high-order bit, yielding 011 = 3.
+// Note, it is possible that we could get 111 = 7 as the answer, which is equivalent to 0 mod 7.
+// For understanding, the state of the qubits is shown after each state change (bit 0 first, bit 11 last).
+
+// inputs: qubits 0 - 5
+// outputs: qubits 6 - 8
+// ancilla: qubits 9 - 11
+
+VectorSize 12
+
+SetViewMode 2
+SetViewAngle Math.PI / 12
+
+// Initialize input values
+SigmaX 0  // [state = 100000 000 000]
+SigmaX 2  // [state = 101000 000 000]
+SigmaX 3  // [state = 101100 000 000]
+SigmaX 5  // [state = 101101 000 000]
+
+// Split the 6-bit input into 3 high-order bits and 3 low-order bits.
+// Start by figuring out the high-order carry bit, when we add the high-order bits to the lower-order bits.
+
+// Store the low-order carry bit in ancilla bit 11
+Toffoli 2, 5, 11  // [state = 101101 000 001]
+
+// Store the middle carry bit in ancilla bit 10
+Toffoli 1, 4, 10 // second carry bit
+CNot 1, 4
+Toffoli 11, 4, 10
+CNot 1, 4
+
+// Store the high-order carry bit in ancilla bit 9.
+// Bit 9 becomes our third addend later.
+Toffoli 0, 3, 9  // [state = 101101 000 101]
+CNot 0, 3  // [state = 101001 000 101]
+Toffoli 10, 3, 9
+CNot 0, 3  // [state = 101101 000 101]
+ 
+// Uncompute bit 10, so we can reuse it later
+CNot 1, 4
+Toffoli 9, 4, 10
+CNot 1, 4
+Toffoli 1, 4, 10
+ 
+// Add bits 0 - 2 to bits 3 - 5, using carry bit 9 as a possible additional addend.
+// Calculate the low-order carry bit in ancilla bit 11.
+// Bit 11 already has carry for bits 2 and 5; add carry bit 9
+CNot 2, 5  // [state = 101100 000 101]
+Toffoli 9, 5, 11
+CNot 2, 5  // [state = 101101 000 101]
+ 
+// Low-order sum bit
+CNot 2, 8  // [state = 101101 001 101]
+CNot 5, 8  // [state = 101101 000 101]
+CNot 9, 8  // [state = 101101 001 101]
+ 
+// Middle carry bit (using addend bits 1 and 4, with carry bit 11 from the previous step)
+Toffoli 1, 4, 10
+CNot 1, 4
+Toffoli 11, 4, 10
+CNot 1, 4
+ 
+// Middle sum bit
+CNot 1, 7
+CNot 4, 7
+CNot 11, 7  // [state = 101101 011 101]
+ 
+// High-order sum bit
+CNot 0, 6  // [state = 101101 111 101]
+CNot 3, 6  // [state = 101101 011 101]
+CNot 10, 6
+
+// Now, the answer is in bits 6 - 8.
+// Uncompute bits 9, 10, and 11.
+CNot 1, 4
+Toffoli 11, 4, 10
+CNot 1, 4
+Toffoli 1, 4, 10
+CNot 2, 5  // [state = 101100 011 101]
+Toffoli 9, 5, 11
+CNot 2, 5  // [state = 101101 011 101]
+Toffoli 1, 4, 10  // re-compute 10, so we can uncompute 9
+CNot 1, 4
+Toffoli 9, 4, 10
+CNot 1, 4
+CNot 0, 3  // [state = 101001 011 101]
+Toffoli 10, 3, 9
+CNot 0, 3  // [state = 101101 011 101]
+Toffoli 0, 3, 9  // [state = 101001 011 001]
+CNot 1, 4
+Toffoli 11, 4, 10
+CNot 1, 4
+Toffoli 1, 4, 10
+Toffoli 2, 5, 11  // [state = 101101 011 000]
+
+Measure
+regval = measured_value
+
+// Our register is loaded backwards (high-order bits in low-order locations).
+// Get the inputs and outputs out in the right order.
+input = (regval & 32) / 32 + (regval & 16) / 8 + (regval & 8) / 2 + (regval & 4) * 2 + (regval & 2) * 8 + (regval & 1) * 32
+output = (regval & 256) / 256 + (regval & 128) / 64 + (regval & 64) / 16
+Print "Input was " + input + ", output is " + output + " (full register value was " + regval + ")"
